@@ -1,0 +1,20 @@
+# Entorno virtual
+venv/
+
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de entorno
+.env
+
+# Archivos de configuración de editor
+.vscode/
+.idea/
+*.swp
+
+# Otros
+.DS_Store
+Thumbs.db 
