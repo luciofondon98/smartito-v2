@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from sqlalchemy import text
 from dotenv import load_dotenv
-from database_functions import get_database_connection
+from database.database_functions import get_database_connection
 from openai import OpenAI
 
 # Cargar variables de entorno desde .env
