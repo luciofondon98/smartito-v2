@@ -26,51 +26,39 @@ def generate_sql_query(question):
     prompt = f"""
     Eres un experto en SQL para PostgreSQL. Genera UNA SOLA consulta SQL válida basada en esta pregunta: {question}
     
-    Objetivo de la LLM:
-    El LLM está diseñado para responder preguntas del negocio relacionadas con:
-        1. Desempeño y cambios en las métricas de conversión a lo largo del tiempo.
-        2. Análisis de comportamiento de usuarios en el embudo de ventas.
-        3. Efectividad de campañas de marketing (pagadas, orgánicas, promocionadas).
-        4. Comparaciones entre mercados y culturas, y su impacto en los resultados de eCommerce.
-        5. Identificación de tendencias, anomalías y oportunidades de mejora.
-    Las respuestas deben ser específicas, claras y accionables, proporcionando recomendaciones cuando sea necesario.
-    
-    IMPORTANTE:
+    IMPORTANTE - Reglas para PostgreSQL:
     - La tabla se llama 'client_conversion_only_culture'
+    - Para usar ROUND() con campos float/double precision, convierte primero a numeric: ROUND(campo::numeric, 2)
+    - Para cálculos de porcentajes, usa: ROUND((valor * 100.0) / total, 2)
+    - Para evitar división por cero, usa NULLIF: NULLIF(denominador, 0)
     - Usa SOLO símbolos SQL estándar: >=, <=, =, !=, etc. (NO uses ≥, ≤, ≠)
     - NO incluyas markdown, comillas extra, o formato adicional
     - Responde SOLO con la consulta SQL pura
     
     La tabla 'client_conversion_only_culture' tiene estas columnas:
     - date (datetime): fecha de la métrica
-    - culture (string): Representa el país del usuario basado en las siguientes asignaciones:
-        'CL' -> 'Chile'
-        'AR' -> 'Argentina'
-        'PE' -> 'Perú'
-        'CO' -> 'Colombia'
-        'BR' -> 'Brasil'
-        'UY' -> 'Uruguay'
-        'PY' -> 'Paraguay'
-        'EC' -> 'Ecuador'
-        'US' -> 'Estados Unidos'
+    - culture (string): código de país (CL, AR, PE, CO, BR, UY, PY, EC, US)
     - traffic (float): sesiones / usuarios únicos diarios
     - flight_dom_loaded_flight (int): veces que se cargó la página de vuelos nacionales
-    - payment_confirmation_loaded (int): Total de usuarios únicos que completaron una transacción exitosa.
+    - payment_confirmation_loaded (int): Total de usuarios únicos que completaron una transacción exitosa
     - median_time_seconds (float): tiempo mediano hasta la conversión en segundos
     - median_time_minutes (float): tiempo mediano en minutos hasta la conversión
     
-    Ejemplo de respuesta correcta:
-    SELECT SUM(traffic) FROM client_conversion_only_culture WHERE culture = 'CL' AND date >= '2024-01-05'
+    Ejemplo de respuesta correcta con conversiones de tipos:
+    SELECT culture, ROUND(AVG(median_time_seconds)::numeric, 2) as tiempo_medio FROM client_conversion_only_culture WHERE culture = 'CL' GROUP BY culture
     """
+    
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0
     )
+    
     sql_query = response.choices[0].message.content.strip()
     if sql_query.startswith('```'):
         lines = sql_query.split('\n')
         sql_query = '\n'.join(lines[1:-1]) if len(lines) > 2 else sql_query
+    
     return sql_query
 
 def execute_query(sql_query):
